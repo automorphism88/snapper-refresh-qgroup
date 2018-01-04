@@ -50,7 +50,7 @@ do_snapper_config() {
         btrfs qgroup create "$QGROUP" "$SUBVOLUME"
     # add snapshots to QGROUP
     for i in $(btrfs sub list -o -- "$SUBVOLUME"/.snapshots |
-                   cut -d ' ' -f2
+                   cut -d ' ' -f 2
               )
     do
         btrfs qgroup assign -- "0/$i" "$QGROUP" "$SUBVOLUME"
