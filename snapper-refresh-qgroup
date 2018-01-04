@@ -57,6 +57,7 @@ do_snapper_config() {
     done
 }
 
+# print a list of snapper configs separated by newlines to stdout
 get_snapper_configs() {
     snapper list-configs | awk -f /dev/fd/3 3<<'_EOF_'
 BEGIN { FS = "|" } # snapper separates columns with '|' characters
