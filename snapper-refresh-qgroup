@@ -1,0 +1,104 @@
+#!/bin/sh -
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+# shellcheck disable=SC2086
+# double quotes are omitted intentionally since we use IFS=$'\n'
+# and want word splitting to occur
+
+readonly CONFIG_DIR=/etc/snapper/configs
+IFS='
+'
+set -u
+
+do_snapper_config() {
+    QGROUP=
+    SUBVOLUME=
+    # make sure snapper config exists, then source it
+    if [ -r "${CONFIG_DIR}/$1" ] ; then
+        # shellcheck disable=SC1090
+        # we don't need shellcheck to check these files, since they are
+        # sourced by snapper itself
+        . "${CONFIG_DIR}/$1"
+    else
+        printf 'Could not find %s\n' "${CONFIG_DIR}/$1" >&2
+        exit 1
+    fi
+    # sanity checks on config we sourced
+    if [ -z "$QGROUP" ] ; then
+        printf 'QGROUP not defined for snapper config %s\n' "$1" >&2
+        return
+    elif ! is_btrfs_subvolume "$SUBVOLUME" ; then
+        printf 'Invalid subvolume %s for snapper config %s\n' \
+               "$SUBVOLUME" "$1" >&2
+        return
+    fi
+    # create QGROUP if it doesn't already exist
+    btrfs qgroup show "$SUBVOLUME" |
+        grep "^$QGROUP" > /dev/null ||
+        btrfs qgroup create "$QGROUP" "$SUBVOLUME"
+    # add snapshots to QGROUP
+    for i in $(btrfs sub list -o -- "$SUBVOLUME"/.snapshots |
+                   cut -d ' ' -f2
+              )
+    do
+        btrfs qgroup assign -- "0/$i" "$QGROUP" "$SUBVOLUME"
+    done
+}
+
+# Returns:
+# 0 if $1 is a btrfs subvolume
+# 1 if $1 is an "empty subvolume" inside a snapshot
+# 2 if $1 is an ordinary directory
+# 3 if $1 is not a directory
+# 4 if we couldn't determine the inode number with stat
+is_btrfs_subvolume() {
+    [ -d "$1" ] || return 3
+    case $(stat --format=%i -- "$1") in
+        256)
+            return 0 ;;
+        2)
+            return 1 ;;
+        '')
+            return 4 ;;
+        *)
+            return 2 ;;
+    esac
+}
+
+main() {
+    # must run as root to modify qgroups
+    if [ "$(id -u)" != 0 ] ; then
+        printf '%s must be run as root\n' "$0" >&2
+        exit 1
+    fi
+    # if no command line parameters, try to refresh all snapper configs
+    # else, refresh the specified configs
+    if [ $# -gt 0 ] ; then
+        for i in "$@" ; do
+            do_snapper_config "$i"
+        done
+    else
+        for i in $(snapper list-configs |
+                       awk 'BEGIN { FS = "|" }
+                           NR<=2 { next }
+                           { gsub(/[ ]*$/,"",$1) ; print $1 }'
+                  )
+        do
+            do_snapper_config "$i"
+        done
+    fi
+}
+
+main "$@"
