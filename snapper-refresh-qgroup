@@ -57,6 +57,18 @@ do_snapper_config() {
     done
 }
 
+get_snapper_configs() {
+    snapper list-configs | awk -f /dev/fd/3 3<<'_EOF_'
+BEGIN { FS = "|" } # snapper separates columns with '|' characters
+NR<=2 { next } # first 2 lines are the header
+{
+    # remove trailing spaces from config names and print
+    gsub(/[ ]*$/,"",$1)
+    print $1
+}
+_EOF_
+}
+
 # Returns:
 # 0 if $1 is a btrfs subvolume
 # 1 if $1 is an "empty subvolume" inside a snapshot
@@ -90,17 +102,7 @@ main() {
             do_snapper_config "$i"
         done
     else
-        for i in $(snapper list-configs | awk -f /dev/fd/3 3<<'_EOF_'
-BEGIN { FS = "|" } # snapper separates columns with '|' characters
-NR<=2 { next } # first 2 lines are the header
-{
-    # remove trailing spaces from config names and print
-    gsub(/[ ]*$/,"",$1)
-    print $1
-}
-_EOF_
-                  )
-        do
+        for i in $(get_snapper_configs) ; do
             do_snapper_config "$i"
         done
     fi
