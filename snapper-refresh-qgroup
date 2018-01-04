@@ -90,10 +90,15 @@ main() {
             do_snapper_config "$i"
         done
     else
-        for i in $(snapper list-configs |
-                       awk 'BEGIN { FS = "|" }
-                           NR<=2 { next }
-                           { gsub(/[ ]*$/,"",$1) ; print $1 }'
+        for i in $(snapper list-configs | awk -f /dev/fd/3 3<<'_EOF_'
+BEGIN { FS = "|" } # snapper separates columns with '|' characters
+NR<=2 { next } # first 2 lines are the header
+{
+    # remove trailing spaces from config names and print
+    gsub(/[ ]*$/,"",$1)
+    print $1
+}
+_EOF_
                   )
         do
             do_snapper_config "$i"
