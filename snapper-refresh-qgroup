@@ -33,7 +33,7 @@ do_snapper_config() {
         . "${CONFIG_DIR}/$1"
     else
         printf 'Could not find %s\n' "${CONFIG_DIR}/$1" >&2
-        exit 1
+        return
     fi
     # sanity checks on config we sourced
     if [ -z "$QGROUP" ] ; then
