@@ -17,7 +17,8 @@
 # double quotes are omitted intentionally since we use IFS=$'\n'
 # and want word splitting to occur
 
-readonly CONFIG_DIR=/etc/snapper/configs
+readonly DEFAULT_CONFIG_DIR=/etc/snapper/configs
+CONFIG_DIR="${SNAPPER_CONFIG_DIR:-$DEFAULT_CONFIG_DIR}"
 IFS='
 '
 set -u

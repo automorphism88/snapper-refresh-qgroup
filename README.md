@@ -16,5 +16,6 @@ This script is intended to work with any POSIX-compliant shell, and is used by
 the author with dash as `/bin/sh`. However, it must be run as root, since root
 privileges are required for qgroup assignments. It assumes that snapper config
 files can be found in the standard `/etc/snapper/configs` directory; if they
-are located elsewhere, the `CONFIG_DIR` readonly variable defined at the top of
-the script can be modified appropriately.
+are located elsewhere, the `SNAPPER_CONFIG_DIR` environment variable can be set
+to the correct directory, or the `DEFAULT_CONFIG_DIR` readonly variable set at
+the top of the script can be modified.
