@@ -34,16 +34,16 @@ do_snapper_config() {
         . "${CONFIG_DIR}/$1"
     else
         printf 'Could not find %s\n' "${CONFIG_DIR}/$1" >&2
-        return
+        return 1
     fi
     # sanity checks on config we sourced
     if [ -z "$QGROUP" ] ; then
         printf 'QGROUP not defined for snapper config %s\n' "$1" >&2
-        return
+        return 2
     elif ! is_btrfs_subvolume "$SUBVOLUME" ; then
         printf 'Invalid subvolume %s for snapper config %s\n' \
                "$SUBVOLUME" "$1" >&2
-        return
+        return 3
     fi
     # create QGROUP if it doesn't already exist
     btrfs qgroup show "$SUBVOLUME" |
