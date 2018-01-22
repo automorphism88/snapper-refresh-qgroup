@@ -46,9 +46,9 @@ do_snapper_config() {
         return 3
     fi
     # create QGROUP if it doesn't already exist
-    btrfs qgroup show "$SUBVOLUME" |
+    btrfs qgroup show -- "$SUBVOLUME" |
         grep "^$QGROUP" > /dev/null ||
-        btrfs qgroup create "$QGROUP" "$SUBVOLUME"
+        btrfs qgroup create -- "$QGROUP" "$SUBVOLUME"
     # add snapshots to QGROUP
     for i in $(btrfs sub list -o -- "$SUBVOLUME"/.snapshots |
                    cut -d ' ' -f 2
